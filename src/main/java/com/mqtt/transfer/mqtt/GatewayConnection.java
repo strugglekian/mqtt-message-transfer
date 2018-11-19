@@ -39,32 +39,51 @@ public class GatewayConnection implements DeviceTopic {
     private String logoutPub;
     private MqttConnectOptions connectOptions;
 
-    @Autowired
-    private MqttClientInfo mqttClientInfo;
-
     private List<String> allTopics = new ArrayList<>();
     private String[] topicArrays;
 
-    private IOTMqttClientInit iotMqttClientInit;
+    private MqttClient mqttClient;
 
+    private MqttClientInfo mqttClientInfo;
     @Autowired
-    public GatewayConnection(IOTMqttClientInit iotMqttClientInit) {
-        this.iotMqttClientInit = iotMqttClientInit;
+    public GatewayConnection(MqttClientInfo mqttClientInfo) {
+        try {
+            this.mqttClientInfo = mqttClientInfo;
+            log.info("============== 这里只能调用一次 ============="+mqttClientInfo.getUrl());
+            mqttClient = new MqttClient(mqttClientInfo.getUrl(), mqttClientInfo.getClientId(), new MemoryPersistence());
+            connectOptions = new MqttConnectOptions();
+
+            //TODO 重连什么时候触发？？
+            connectOptions.setAutomaticReconnect(mqttClientInfo.getAutomaticReconnect());
+            connectOptions.setKeepAliveInterval(mqttClientInfo.getKeepAliveInterval());
+
+            //如果是true，那么清理所有离线消息，即QoS1或者2的所有未接收内容.默认为true
+            connectOptions.setCleanSession(mqttClientInfo.getCleanSession());
+
+            //TODO 如何预留SSL连接
+
+            connectOptions.setUserName(mqttClientInfo.getUsername());
+            connectOptions.setPassword(mqttClientInfo.getPassword().toCharArray());
+            mqttClient.connect(connectOptions);
+        } catch (MqttException e) {
+            e.printStackTrace();
+            log.info("服务器连接不上？");
+        }
     }
 
-   //TODO 自定义topic怎么办？？
+    //TODO 自定义topic怎么办？？
 
     //TODO 微服务重启需要查询数据库
     @PostConstruct
     public void getAlltopics() {
-        log.info("================="+mqttClientInfo.getUrl());
+        log.info("=================" + mqttClientInfo.getUrl());
         allTopics.add("111");
         allTopics.add("222");
         topicArrays = new String[allTopics.size()];
         String[] allTopicArrays = (String[]) allTopics.toArray(topicArrays);
         log.info(allTopicArrays[0] + ",========," + allTopicArrays[1]);
         try {
-            iotMqttClientInit.getMqttClient().subscribe(allTopicArrays);
+            mqttClient.subscribe(allTopicArrays);
             online("test", "test");
         } catch (MqttException e) {
             e.printStackTrace();
@@ -73,7 +92,7 @@ public class GatewayConnection implements DeviceTopic {
 
     public void online(String productKey, String deviceId) {
         String[] topicsSubscribe;
-        if ("test".equals(productKey) && "test".equals(deviceId)) {
+        if ("test".equals(productKey) && "test".equals(deviceId)) { //只是为了回调函数生效
             topicsSubscribe = new String[]{"test"};
         } else {
             log.info("alltopics:" + allTopics.size());
@@ -82,16 +101,16 @@ public class GatewayConnection implements DeviceTopic {
         }
         try {
             log.info("数组大小：" + topicsSubscribe.length + "; 集合大小：" + topicSet.size());
-            iotMqttClientInit.getMqttClient().subscribe(topicsSubscribe);
-            iotMqttClientInit.getMqttClient().setCallback(new MqttCallback() {
+            mqttClient.subscribe(topicsSubscribe);
+            mqttClient.setCallback(new MqttCallback() {
                 @Override
                 public void connectionLost(Throwable cause) {
                     //服务器重启
-                    while (!iotMqttClientInit.getMqttClient().isConnected()) {
+                    while (!mqttClient.isConnected()) {
                         log.info("服务器连接不上：" + fm.format(new Date()));
                         try {
-                            iotMqttClientInit.getMqttClient().connect();
-                            iotMqttClientInit.getMqttClient().subscribe(topicSet.toArray(new String[topicSet.size()]));
+                            mqttClient.connect();
+                            mqttClient.subscribe(topicSet.toArray(new String[topicSet.size()]));
                         } catch (MqttException e) {
                             e.printStackTrace();
                             try {
@@ -106,22 +125,47 @@ public class GatewayConnection implements DeviceTopic {
 
                 @Override
                 public void messageArrived(String topic, MqttMessage message) throws Exception {
-                    log.info("订阅topic:" + topic+"===透传");
+                    log.info("订阅topic:" + topic + "===透传");
                     if (topic.equals(topicsSubscribe[0])) {
                         log.info("网关上线：" + new String(message.getPayload()));
-                        publish("/mqttServer"+topicsSubscribe[0],message);
+                        executorService.execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                publish("/mqttServer" + topicsSubscribe[0], message);
+                            }
+                        });
                     } else if (topic.equals(topicsSubscribe[1])) {
                         log.info("网关下线：" + new String(message.getPayload()));
-                        publish("/mqttServer"+topicsSubscribe[1],message);
+                        executorService.execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                publish("/mqttServer" + topicsSubscribe[1], message);
+                            }
+                        });
                     } else if (topic.equals(topicsSubscribe[2])) {
                         log.info("网关重启：" + new String(message.getPayload()));
-                        publish("/mqttsErver"+topicsSubscribe[2],message);
+                        executorService.execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                publish("/mqttsErver" + topicsSubscribe[2], message);
+                            }
+                        });
                     } else if (topic.equals(topicsSubscribe[3])) {
                         log.info("子设备上线：" + new String(message.getPayload()));
-                        publish("/mqttServer"+topicsSubscribe[3],message);
+                        executorService.execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                publish("/mqttServer" + topicsSubscribe[3], message);
+                            }
+                        });
                     } else if (topic.equals(topicsSubscribe[4])) {
                         log.info("子设备下线：" + new String(message.getPayload()));
-                        publish("/mqttServer"+topicsSubscribe[4],message);
+                        executorService.execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                publish("/mqttServer" + topicsSubscribe[4], message);
+                            }
+                        });
                     } else {
                         log.info("异常topic");
                     }
@@ -142,36 +186,25 @@ public class GatewayConnection implements DeviceTopic {
     public void publish(String topic, MqttMessage mqttMessage) {
 //        MqttMessage mqttMessage = new MqttMessage(message.getBytes());
         mqttMessage.setQos(0);
-        MqttTopic mqttTopic = iotMqttClientInit.getMqttClient().getTopic(topic);
+        MqttTopic mqttTopic = mqttClient.getTopic(topic);
         try {
             mqttTopic.publish(mqttMessage);
         } catch (MqttException e) {
             e.printStackTrace();
-            MqttClient mqttClient = null;
-            MqttConnectOptions connectOptions = new MqttConnectOptions();
-            connectOptions.setAutomaticReconnect(mqttClientInfo.getAutomaticReconnect());
-            connectOptions.setKeepAliveInterval(mqttClientInfo.getKeepAliveInterval());
-            connectOptions.setCleanSession(mqttClientInfo.getCleanSession());
-            //TODO 如何预留SSL连接
-            connectOptions.setUserName(mqttClientInfo.getUsername());
-            connectOptions.setPassword(mqttClientInfo.getPassword().toCharArray());
-            while (true){
+            while (true) {
                 try {
-                    mqttClient = new MqttClient(mqttClientInfo.getUrl(),mqttClientInfo.getClientId()+"abcdefg",new MemoryPersistence());
+                    mqttClient.close();
+                    mqttClient = new MqttClient(mqttClientInfo.getUrl(), mqttClientInfo.getClientId() + "abcdefg", new MemoryPersistence());
                     mqttClient.connect(connectOptions);
-                    mqttClient.publish(topic,mqttMessage);
+                    mqttClient.publish(topic, mqttMessage);
                     break;
                 } catch (MqttException e1) {
                     e1.printStackTrace();
                     log.info("发布数据失败，重新连接,等待一分钟，并且关闭客户端！");
                     try {
                         TimeUnit.SECONDS.sleep(60);
-                        mqttClient.close(true);
                     } catch (InterruptedException e2) {
                         e2.printStackTrace();
-                    } catch (MqttException e2) {
-                        e2.printStackTrace();
-                        log.info("客户端无法关闭，无解!!!!!");
                     }
                     continue;
                 }
@@ -181,10 +214,10 @@ public class GatewayConnection implements DeviceTopic {
     }
 
     public void unsubscribeAll(String productKey, String deviceId) {
-        //TODO 二期需要查询数据库
+        //TODO 需要查询数据库
         log.info("onlineSub:" + onlineSub + ";  offlineSub:" + offlineSub + ";  restartSub:" + restartSub + "; loginSub:" + loginSub + "; logoutSub:" + logoutSub);
         try {
-            iotMqttClientInit.getMqttClient().unsubscribe(getTopics(productKey, deviceId, TopicType.SUBSCRIBE_TOPIC));
+            mqttClient.unsubscribe(getTopics(productKey, deviceId, TopicType.SUBSCRIBE_TOPIC));
         } catch (MqttException e) {
             e.printStackTrace();
         }
@@ -203,7 +236,7 @@ public class GatewayConnection implements DeviceTopic {
         loginPub = "/ext/session/" + productKey + "/" + deviceId + "/combine/login_reply";
         logoutSub = "/ext/session/" + productKey + "/" + deviceId + "/combine/logut";
         logoutPub = "/ext/session/" + productKey + "/" + deviceId + "/combine/logut_reply";
-            //TODO 自定义topic的时候需要指定topic的类型：发布，订阅
+
         if (TopicType.PUBLISH_TOPIC.equals(topicType)) {
             return new String[]{onlinePub, offlinePub, restartPub, loginPub, logoutPub};
         } else if (TopicType.SUBSCRIBE_TOPIC.equals(topicType)) {

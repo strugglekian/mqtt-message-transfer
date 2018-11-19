@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Slf4j
-@Component
 public class IOTMqttClientInit {
 
     private MqttClient mqttClient;
@@ -25,7 +24,6 @@ public class IOTMqttClientInit {
         return mqttClient;
     }
 
-    @Autowired
     public IOTMqttClientInit(MqttClientInfo mqttClientInfo) {
         try {
             log.info("============== 这里只能调用一次 =============");

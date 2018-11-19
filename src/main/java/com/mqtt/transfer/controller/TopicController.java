@@ -32,9 +32,9 @@ public class TopicController {
     }
 
     @DeleteMapping(value = "/topic/gateway",produces = "application/json;charset=utf-8")
-    public ReplyResult unsubscribe(@RequestBody GatewayTemplate gatewayTemplate){
-        log.info("DeleteMapping:/topic/gatewayTemplate:"+ gatewayTemplate);
-//        gatewayConnection.unsubscribeAll();
+    public ReplyResult unsubscribe(@RequestBody MqttInfo mqttInfo){
+        log.info("DeleteMapping:/topic/gatewayTemplate:"+ mqttInfo);
+        gatewayConnection.unsubscribeAll(mqttInfo.getProductKey(),mqttInfo.getProductSecret());
         return ReplyResult.ok();
     }
 
