@@ -11,4 +11,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public interface MqttInfoRepository extends MongoRepository<MqttInfo,String> {
+
+    MqttInfo findByFirmNameAndGatewayName(String firmName,String gatewayName);
+
 }

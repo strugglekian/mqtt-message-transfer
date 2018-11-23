@@ -6,7 +6,6 @@
 package com.mqtt.transfer.controller;
 
 import com.mqtt.transfer.mqtt.GatewayConnection;
-import com.mqtt.transfer.pojo.GatewayTemplate;
 import com.mqtt.transfer.pojo.MqttInfo;
 import com.mqtt.transfer.util.ReplyResult;
 import lombok.extern.slf4j.Slf4j;
@@ -21,13 +20,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class TopicController {
 
+    private final GatewayConnection gatewayConnection;
+
     @Autowired
-    private GatewayConnection gatewayConnection;
+    public TopicController(GatewayConnection gatewayConnection) {
+        this.gatewayConnection = gatewayConnection;
+    }
 
     @PostMapping(value = "/topic/gateway",produces = "application/json;charset=utf-8")
     public ReplyResult deviceTopic(@RequestBody MqttInfo mqttInfo){
         log.info("PostMapping:/topic/gatewayTemplate:"+ mqttInfo);
-        gatewayConnection.online(mqttInfo.getProductKey(), mqttInfo.getProductSecret());
+        gatewayConnection.online(mqttInfo.getProductKey(), mqttInfo.getProductSecret(),null);
         return ReplyResult.ok();
     }
 

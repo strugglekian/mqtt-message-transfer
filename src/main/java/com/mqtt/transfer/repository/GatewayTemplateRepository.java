@@ -25,4 +25,6 @@ public interface GatewayTemplateRepository extends MongoRepository<GatewayTempla
 
     Long countByFirmName(String firmName);
 
+    void deleteGatewayTemplateByFirmNameAndGatewayName(String firmName, String gatewayName);
+
 }
