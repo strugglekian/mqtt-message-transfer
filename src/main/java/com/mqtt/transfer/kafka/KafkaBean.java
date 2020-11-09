@@ -5,17 +5,15 @@
  */
 package com.mqtt.transfer.kafka;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.stereotype.Component;
 
-@Component
+
+//@Component
 public class KafkaBean {
 
-    private KafkaTemplate kafkaTemplate;
-
-    @Autowired
-    public KafkaBean(KafkaTemplate kafkaTemplate) {
-        this.kafkaTemplate = kafkaTemplate;
-    }
+//    private KafkaTemplate kafkaTemplate;
+//
+//    @Autowired
+//    public KafkaBean(KafkaTemplate kafkaTemplate) {
+//        this.kafkaTemplate = kafkaTemplate;
+//    }
 }
