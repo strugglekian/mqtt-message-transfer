@@ -19,4 +19,15 @@ public class TopicInfo {
     private String topicDescribe;
     private String topicOperation;
     private String gatewayName;
+    private String firmName;
+
+    public  TopicInfo(){}
+
+    public TopicInfo(String topicName, String topicDescribe, String topicOperation, String gatewayName, String firmName) {
+        this.topicName = topicName;
+        this.topicDescribe = topicDescribe;
+        this.topicOperation = topicOperation;
+        this.gatewayName = gatewayName;
+        this.firmName = firmName;
+    }
 }

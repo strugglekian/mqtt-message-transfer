@@ -14,4 +14,6 @@ public interface GatewayTemplateService {
     void createGatewayTemplate(GatewayTemplate gatewayTemplate);
 
     List<GatewayTemplate> showGatewayTemplate(int pageNum, int pageSize, String firmName, String gatewayName);
+
+    void deleteGatewayTemplate(String firmName,String gatewayName);
 }

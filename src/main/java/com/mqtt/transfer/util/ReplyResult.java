@@ -18,7 +18,7 @@ public class ReplyResult implements Serializable {
     private Integer code;
 
     // 响应消息
-    private String msg;
+    private String message;
 
     // 响应中的数据
     private Object data;
@@ -45,13 +45,13 @@ public class ReplyResult implements Serializable {
 
     public ReplyResult(Integer code, String msg, Object data) {
         this.code = code;
-        this.msg = msg;
+        this.message = msg;
         this.data = data;
     }
 
     public ReplyResult(Object data) {
         this.code = 200;
-        this.msg = "success";
+        this.message = "success";
         this.data = data;
     }
 
@@ -88,7 +88,7 @@ public class ReplyResult implements Serializable {
                     obj = MAPPER.readValue(data.asText(), clazz);
                 }
             }
-            return build(jsonNode.get("code").intValue(), jsonNode.get("msg").asText(), obj);
+            return build(jsonNode.get("code").intValue(), jsonNode.get("message").asText(), obj);
         } catch (Exception e) {
             return null;
         }
@@ -125,7 +125,7 @@ public class ReplyResult implements Serializable {
                 obj = MAPPER.readValue(data.traverse(),
                         MAPPER.getTypeFactory().constructCollectionType(List.class, clazz));
             }
-            return build(jsonNode.get("code").intValue(), jsonNode.get("msg").asText(), obj);
+            return build(jsonNode.get("code").intValue(), jsonNode.get("message").asText(), obj);
         } catch (Exception e) {
             return null;
         }

@@ -18,5 +18,7 @@ public class MqttInfo {
     private String url;
     private String productKey;
     private String productSecret;
+    private String clientId;
     private String gatewayName;
+    private String firmName;
 }
